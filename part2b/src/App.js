@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-import Note from "./components/Note";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
+
+import personService from "./services/persons";
 
 function App() {
   // List of people
@@ -23,25 +24,42 @@ function App() {
     const promise = axios.get("http://localhost:3001/persons");
     promise.then(eventHandler);
   }, []);
-  console.log(`Fetched ${persons.length} people`);
 
   // onSubmit
   const addPerson = (e) => {
     e.preventDefault();
 
+    const personObject = {
+      name: newName,
+      number: newNumber,
+    };
+
+    const filteredPerson = persons.filter((person) => person.name === newName);
+
     // found duplicate
-    if (persons.filter((person) => person.name === newName).length > 0) {
-      window.alert(`${newName} is already added to phonebook`);
-      return;
+    if (filteredPerson.length > 0) {
+      const confirm = window.confirm(
+        `${newName} is already added to phonebook, replace the old number with a new one?`
+      );
+
+      const personId = filteredPerson[0].id;
+
+      // update person
+      if (confirm) {
+        personService.updatePerson(personId, personObject).then((res) => {
+          setPersons(
+            persons.map((person) => (person.id === personId ? res : person))
+          );
+        });
+
+        //need to update the phonebook after update
+      }
     }
     // not duplicate
     else {
-      const personObject = {
-        name: newName,
-        number: newNumber,
-      };
-
-      setPersons(persons.concat(personObject));
+      personService
+        .addPerson(personObject)
+        .then((res) => setPersons(persons.concat(res)));
     }
 
     setNewName("");
@@ -78,7 +96,7 @@ function App() {
 
       <h3>Numbers</h3>
 
-      <Persons persons={persons} filter={newSearch} />
+      <Persons persons={persons} setPersons={setPersons} filter={newSearch} />
     </div>
   );
 }
