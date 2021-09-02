@@ -4,10 +4,15 @@ import axios from "axios";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
+import Notification from "./components/Notification";
 
 import personService from "./services/persons";
 
 function App() {
+  // Notification
+  const [newNotifcation, setNewNotification] = useState(null);
+  const [isSuccess, setIsSuccess] = useState(true);
+
   // List of people
   const [persons, setPersons] = useState([]);
 
@@ -46,24 +51,42 @@ function App() {
 
       // update person
       if (confirm) {
-        personService.updatePerson(personId, personObject).then((res) => {
-          setPersons(
-            persons.map((person) => (person.id === personId ? res : person))
+        personService
+          .updatePerson(personId, personObject)
+          .then((res) => {
+            setPersons(
+              persons.map((person) => (person.id === personId ? res : person))
+            );
+            showNotification(`Added ${newName}`, true);
+          })
+          .catch(
+            showNotification(
+              `Information of ${newName} has already been removed from the server`,
+              false
+            )
           );
-        });
-
-        //need to update the phonebook after update
       }
     }
     // not duplicate
     else {
-      personService
-        .addPerson(personObject)
-        .then((res) => setPersons(persons.concat(res)));
+      personService.addPerson(personObject).then((res) => {
+        setPersons(persons.concat(res));
+        showNotification(`Added ${newName}`, true);
+      });
     }
+
+    // Show Notification
+    setTimeout(() => {
+      setNewNotification(null);
+    }, 4000);
 
     setNewName("");
     setNewNumber("");
+  };
+
+  const showNotification = (message, isSuccess) => {
+    setNewNotification(message);
+    setIsSuccess(isSuccess);
   };
 
   const handleNameChange = (e) => {
@@ -81,6 +104,8 @@ function App() {
   return (
     <div>
       <h2>Phonebook</h2>
+
+      <Notification message={newNotifcation} isSuccess={isSuccess} />
 
       <Filter newSearch={newSearch} handleSearchChange={handleSearchChange} />
 
