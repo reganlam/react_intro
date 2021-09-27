@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
@@ -23,11 +22,10 @@ function App() {
 
   useEffect(() => {
     const eventHandler = (res) => {
-      setPersons(res.data);
+      setPersons(res);
     };
 
-    const promise = axios.get("http://localhost:3001/persons");
-    promise.then(eventHandler);
+    personService.getPeople().then(eventHandler);
   }, []);
 
   // onSubmit
@@ -75,11 +73,6 @@ function App() {
       });
     }
 
-    // Show Notification
-    setTimeout(() => {
-      setNewNotification(null);
-    }, 4000);
-
     setNewName("");
     setNewNumber("");
   };
@@ -87,6 +80,11 @@ function App() {
   const showNotification = (message, isSuccess) => {
     setNewNotification(message);
     setIsSuccess(isSuccess);
+
+    // Show Notification
+    setTimeout(() => {
+      setNewNotification(null);
+    }, 4000);
   };
 
   const handleNameChange = (e) => {
@@ -121,7 +119,12 @@ function App() {
 
       <h3>Numbers</h3>
 
-      <Persons persons={persons} setPersons={setPersons} filter={newSearch} />
+      <Persons
+        persons={persons}
+        setPersons={setPersons}
+        filter={newSearch}
+        showNotification={showNotification}
+      />
     </div>
   );
 }
