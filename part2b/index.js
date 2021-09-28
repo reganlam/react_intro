@@ -76,7 +76,11 @@ app.put("/api/persons/:id", (request, response, next) => {
 		number: body.number,
 	};
 
-	Person.findByIdAndUpdate(request.params.id, person, { new: true })
+	Person.findByIdAndUpdate(request.params.id, person, {
+		new: true,
+		runValidators: true,
+		context: "query",
+	})
 		.then((updatedPerson) => {
 			response.json(updatedPerson);
 		})
@@ -93,7 +97,7 @@ app.get("/api/notes/:id", (request, response, next) => {
 	Note.findById(request.params.id)
 		.then((note) => {
 			if (note) {
-				response.json(note);
+				response.json(note.toJSON());
 			} else {
 				response.status(404).end();
 			}
@@ -101,12 +105,8 @@ app.get("/api/notes/:id", (request, response, next) => {
 		.catch((error) => next(error));
 });
 
-app.post("/api/notes", (request, response) => {
+app.post("/api/notes", (request, response, next) => {
 	const body = request.body;
-
-	if (body.content === undefined) {
-		return response.status(400).json({ error: "content missing" });
-	}
 
 	const note = new Note({
 		content: body.content,
@@ -114,9 +114,10 @@ app.post("/api/notes", (request, response) => {
 		date: new Date(),
 	});
 
-	note.save().then((savedNote) => {
-		response.json(savedNote);
-	});
+	note.save()
+		.then((savedNote) => savedNote.toJSON())
+		.then((savedAndFormatedNote) => response.json(savedAndFormatedNote))
+		.catch((error) => next(error));
 });
 
 app.put("/api/notes/:id", (request, response, next) => {
@@ -127,7 +128,10 @@ app.put("/api/notes/:id", (request, response, next) => {
 		important: body.important,
 	};
 
-	Note.findByIdAndUpdate(request.params.id, note, { new: true })
+	Note.findByIdAndUpdate(request.params.id, note, {
+		new: true,
+		runValidators: true,
+	})
 		.then((updatedNote) => {
 			response.json(updatedNote);
 		})
@@ -143,17 +147,24 @@ app.delete("/api/notes/:id", (request, response, next) => {
 });
 
 const unknownEndpoint = (request, response) => {
-	response.status(404).send({ error: "unknown endpoint" });
+	return response.status(404).send({ error: "unknown endpoint" });
 };
 
 // handler of requests with unknown endpoint
 app.use(unknownEndpoint);
 
 const errorHandler = (error, request, response, next) => {
+	console.log("error.name: " + error.name);
 	console.error(error.message);
 
 	if (error.name === "CastError") {
 		return response.status(400).send({ error: "malformatted id" });
+	} else if (error.name === "ValidationError") {
+		return response.status(400).send({ error: error.message });
+	} else if (error.name === "ReferenceError") {
+		return response.status(400).send({ error: error.message });
+	} else if (error.name === "SyntaxError") {
+		return response.status(400).send({ error: error.message });
 	}
 
 	next(error);
@@ -162,7 +173,8 @@ const errorHandler = (error, request, response, next) => {
 // this has to be the last loaded middleware.
 app.use(errorHandler);
 
-const PORT = process.env.SERVER_PORT;
+const PORT = process.env.PORT || 3001;
+
 app.listen(PORT, () => {
 	console.log(`Server running on port ${PORT}`);
 });

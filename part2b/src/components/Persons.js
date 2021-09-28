@@ -16,16 +16,20 @@ const Persons = ({ persons, setPersons, filter, showNotification }) => {
 	return (
 		<>
 			{persons &&
-				persons
-					.filter((person) => person.name.includes(filter))
-					.map((person, index) => (
+				persons.map((person, index) => {
+					if (person === null) return <></>;
+
+					if (person.name.includes(filter) === false) return <></>;
+
+					return (
 						<p key={index}>
 							{person.name} {person.number}
 							<button onClick={() => onDelete(person)}>
 								delete
 							</button>
 						</p>
-					))}
+					);
+				})}
 		</>
 	);
 };

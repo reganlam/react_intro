@@ -55,22 +55,30 @@ function App() {
             setPersons(
               persons.map((person) => (person.id === personId ? res : person))
             );
-            showNotification(`Added ${newName}`, true);
+            showNotification(`Updated ${newName}`, true);
           })
-          .catch(
-            showNotification(
-              `Information of ${newName} has already been removed from the server`,
-              false
-            )
-          );
+          .catch((error) => {
+            if (error.response === undefined) {
+              showNotification(
+                `Error updating. User ${newName} may have been deleted.`
+              );
+            } else {
+              showNotification(`${error.response.data.error}`, false);
+            }
+          });
       }
     }
     // not duplicate
     else {
-      personService.addPerson(personObject).then((res) => {
-        setPersons(persons.concat(res));
-        showNotification(`Added ${newName}`, true);
-      });
+      personService
+        .addPerson(personObject)
+        .then((res) => {
+          setPersons(persons.concat(res));
+          showNotification(`Added ${newName}`, true);
+        })
+        .catch((error) => {
+          showNotification(`${error.response.data.error}`, false);
+        });
     }
 
     setNewName("");
